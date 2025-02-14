@@ -21,7 +21,8 @@
     "dev": "npm run build && npm start",
     "format:check": "npx prettier . --check",
     "format:write": "npx prettier . --write",
-    "lint": "npx eslint src"
+    "lint": "npx eslint src",
+    "publish": "npm run build && npm publish --access public"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
