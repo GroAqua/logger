@@ -1,5 +1,3 @@
-console.log("hello world");
+import { Logger } from "./classes/logger";
 
-const test: number = 5;
-
-console.log(test);
+export { Logger };
