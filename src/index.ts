@@ -1,3 +1,1 @@
-import { Logger } from "./classes/logger";
-
-export { Logger };
+export { Logger } from "./classes/logger"
