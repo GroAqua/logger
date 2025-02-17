@@ -1,5 +1,5 @@
 export type LogData = {
-  created?: string;
+  created: string;
   key?: string;
   logLevel?: string;
   message: string;

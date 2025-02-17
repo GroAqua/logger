@@ -40,7 +40,7 @@ export class Logger {
     }
 
     console.log(
-      `${new Date().toJSON()} ${"|".magenta().reset()} ${importance} ${"|".magenta().reset()}${logData.username ? `${` ( ${logData.username.cyan().reset()}`}${" )"}` : ""} ${logData.key && logData.value ? `[ ${keyValueColor ? keyValueColor : ""}${logData.key.toUpperCase()}: ${logData.value.toUpperCase()}${Style.Reset} ]` : ""} ${this.formatMessage(message)}`,
+      `${logData.created} ${"|".magenta().reset()} ${importance} ${"|".magenta().reset()}${logData.username ? `${` ( ${logData.username.cyan().reset()}`}${" )"}` : ""} ${logData.key && logData.value ? `[ ${keyValueColor ? keyValueColor : ""}${logData.key.toUpperCase()}: ${logData.value.toUpperCase()}${Style.Reset} ]` : ""} ${this.formatMessage(message)}`,
     );
   }
 
@@ -56,13 +56,24 @@ export class Logger {
   }
 
   // eslint-disable-next-line
+  private getLogData(message: any, logLevel: string, logOptions?: LogOptions) {
+    return {
+      ...logOptions,
+      message: this.formatMessage(message),
+      created: new Date().toJSON(),
+      logLevel: logLevel.trim().toUpperCase(),
+    };
+  }
+
+  // eslint-disable-next-line
   public debug(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.DEB) return;
 
-    const logData: LogData = {
-      ...logOptions,
-      message: this.formatMessage(message),
-    };
+    const logData: LogData = this.getLogData(
+      message,
+      Importance.DEB,
+      logOptions,
+    );
 
     this.print(
       message,
@@ -78,10 +89,11 @@ export class Logger {
   public info(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.INF) return;
 
-    const logData: LogData = {
-      ...logOptions,
-      message: this.formatMessage(message),
-    };
+    const logData: LogData = this.getLogData(
+      message,
+      Importance.INF,
+      logOptions,
+    );
 
     this.print(
       message,
@@ -97,10 +109,11 @@ export class Logger {
   public error(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.ERR) return;
 
-    const logData: LogData = {
-      ...logOptions,
-      message: this.formatMessage(message),
-    };
+    const logData: LogData = this.getLogData(
+      message,
+      Importance.ERR,
+      logOptions,
+    );
 
     this.print(
       message,
@@ -116,10 +129,11 @@ export class Logger {
   public warn(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.WAR) return;
 
-    const logData: LogData = {
-      ...logOptions,
-      message: this.formatMessage(message),
-    };
+    const logData: LogData = this.getLogData(
+      message,
+      Importance.WAR,
+      logOptions,
+    );
 
     this.print(
       message,
@@ -135,10 +149,11 @@ export class Logger {
   public fatal(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.FAT) return;
 
-    const logData: LogData = {
-      ...logOptions,
-      message: this.formatMessage(message),
-    };
+    const logData: LogData = this.getLogData(
+      message,
+      Importance.FAT,
+      logOptions,
+    );
 
     this.print(
       message,
