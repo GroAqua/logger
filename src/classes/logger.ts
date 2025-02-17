@@ -61,7 +61,7 @@ export class Logger {
       ...logOptions,
       message: this.formatMessage(message),
       created: new Date().toJSON(),
-      logLevel: logLevel.trim().toUpperCase(),
+      logLevel: logLevel.trim().toLowerCase(),
     };
   }
 
