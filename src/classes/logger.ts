@@ -5,6 +5,7 @@ import { Style } from "../enums/style";
 import { BackgroundColor } from "../enums/backgroundColor";
 import { Level } from "../enums/level";
 import { LogData } from "../types/logData";
+import { LogOptions } from "../types/logOptions";
 
 export class Logger {
   private static _level: Level = Level.INF;
@@ -43,9 +44,25 @@ export class Logger {
     );
   }
 
+  private runCallback(logData: LogData) {
+    if (logData?.callback) {
+      logData
+        .callback(logData)
+        .then()
+        .catch((error) =>
+          this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
+        );
+    }
+  }
+
   // eslint-disable-next-line
-  public debug(message: any, logData?: LogData) {
+  public debug(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.DEB) return;
+
+    const logData: LogData = {
+      ...logOptions,
+      message: this.formatMessage(message),
+    };
 
     this.print(
       message,
@@ -54,19 +71,17 @@ export class Logger {
       logData,
     );
 
-    if (logData?.callback) {
-      logData
-        .callback(logData)
-        .then()
-        .catch((error) =>
-          this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-        );
-    }
+    this.runCallback(logData);
   }
 
   // eslint-disable-next-line
-  public info(message: any, logData?: LogData) {
+  public info(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.INF) return;
+
+    const logData: LogData = {
+      ...logOptions,
+      message: this.formatMessage(message),
+    };
 
     this.print(
       message,
@@ -75,19 +90,17 @@ export class Logger {
       logData,
     );
 
-    if (logData?.callback) {
-      logData
-        .callback(logData)
-        .then()
-        .catch((error) =>
-          this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-        );
-    }
+    this.runCallback(logData);
   }
 
   // eslint-disable-next-line
-  public error(message: any, logData?: LogData) {
+  public error(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.ERR) return;
+
+    const logData: LogData = {
+      ...logOptions,
+      message: this.formatMessage(message),
+    };
 
     this.print(
       message,
@@ -96,19 +109,17 @@ export class Logger {
       logData,
     );
 
-    if (logData?.callback) {
-      logData
-        .callback(logData)
-        .then()
-        .catch((error) =>
-          this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-        );
-    }
+    this.runCallback(logData);
   }
 
   // eslint-disable-next-line
-  public warn(message: any, logData?: LogData) {
+  public warn(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.WAR) return;
+
+    const logData: LogData = {
+      ...logOptions,
+      message: this.formatMessage(message),
+    };
 
     this.print(
       message,
@@ -117,19 +128,17 @@ export class Logger {
       logData,
     );
 
-    if (logData?.callback) {
-      logData
-        .callback(logData)
-        .then()
-        .catch((error) =>
-          this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-        );
-    }
+    this.runCallback(logData);
   }
 
   // eslint-disable-next-line
-  public fatal(message: any, logData?: LogData) {
+  public fatal(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.FAT) return;
+
+    const logData: LogData = {
+      ...logOptions,
+      message: this.formatMessage(message),
+    };
 
     this.print(
       message,
@@ -138,14 +147,7 @@ export class Logger {
       logData,
     );
 
-    if (logData?.callback) {
-      logData
-        .callback(logData)
-        .then()
-        .catch((error) =>
-          this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-        );
-    }
+    this.runCallback(logData);
   }
 
   public static setLevel(level: Level) {

@@ -1,14 +1,8 @@
 export type LogData = {
-  apiMethod?: string;
-  apiPath?: string;
   created?: string;
-  hostname?: string;
-  ip?: string;
   key?: string;
   logLevel?: string;
-  serviceName?: string;
-  statusCode?: number;
-  statusMessage?: string;
+  message: string;
   userId?: string;
   username?: string;
   value?: string;
