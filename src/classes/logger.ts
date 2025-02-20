@@ -13,18 +13,123 @@ export class Logger {
   private static _level: Level = Level.INF;
 
   // eslint-disable-next-line
-  private formatMessage(message: any) {
+  private complexFormatMessage(message: any): string {
+    if (message === null) return "null";
+    if (message === undefined) return "undefined";
+
     if (typeof message === "object") {
-      const msg = JSON.stringify(message);
-      if (msg === "{}") {
-        return message.toString();
+      if (this.getStrictType(message).toLowerCase() === "map") {
+        return this.unwrapMap(message);
       }
-      return msg;
+
+      if (this.getStrictType(message).toLowerCase() === "set") {
+        return this.unwrapSet(message);
+      }
+
+      if (this.getStrictType(message).toLowerCase() === "array") {
+        return JSON.stringify({
+          type: "Array",
+          length: message.length,
+          data: message,
+        });
+      }
+
+      if (this.getStrictType(message).toLowerCase() === "error") {
+        return JSON.stringify({
+          type: "Error",
+          length: Object.keys(message).length,
+          data: JSON.stringify(
+            message.stack || message.message || message.toString(),
+          ),
+        });
+      }
+
+      if (this.getStrictType(message).toLowerCase() === "date") {
+        return JSON.stringify({
+          type: "Date",
+          length: message.toISOString().length,
+          data: message.toISOString(),
+        });
+      }
+
+      if (this.getStrictType(message).toLowerCase() === "regexp") {
+        return JSON.stringify({
+          type: "RegExp",
+          length: message.toString().length,
+          data: message.toString(),
+        });
+      }
+
+      if (this.getStrictType(message).toLowerCase() === "object") {
+        const json = {
+          type: "Object",
+          length: Object.keys(message).length,
+          data: { ...message },
+        };
+
+        if (!message) {
+          Object.assign(json, { data: "{}" });
+        }
+
+        return JSON.stringify(json);
+      }
+
+      try {
+        const msg = JSON.stringify(message);
+        if (msg === "{}") {
+          return JSON.stringify({
+            type: typeof message,
+            length: message?.length || 0,
+            data: message.toString(),
+          });
+        }
+        return msg;
+        // eslint-disable-next-line
+      } catch (err: any) {
+        return JSON.stringify({
+          type: "Error",
+          length: 0,
+          data: JSON.stringify({
+            type: "Error",
+            data: JSON.stringify(err?.stack || err?.message || err?.toString()),
+          }),
+        });
+      }
     } else if (typeof message !== "string") {
-      return message.toString();
+      return JSON.stringify({
+        type: typeof message,
+        length: message?.length || 0,
+        data: message.toString(),
+      });
     }
 
-    return message;
+    return JSON.stringify({
+      type: "String",
+      length: message?.length || 0,
+      data: message,
+    });
+  }
+
+  // eslint-disable-next-line
+  private unwrapMap(map: Map<any, any>): string {
+    // eslint-disable-next-line
+    const entries: any[] = Array.from(map.entries()).map(([key, value]) => {
+      return { key: key, value: value };
+    });
+
+    return JSON.stringify({
+      type: "Map",
+      length: entries.length,
+      data: entries,
+    });
+  }
+
+  // eslint-disable-next-line
+  private unwrapSet(set: Set<any>): string {
+    // eslint-disable-next-line
+    const values: any[] = Array.from(set.values()).map((value) => value);
+
+    return JSON.stringify({ type: "Set", length: values.length, data: values });
   }
 
   private print(
@@ -35,7 +140,7 @@ export class Logger {
   ) {
     if (logData === undefined) {
       console.log(
-        `${new Date().toJSON()} ${"|".magenta().reset()} ${importance} ${"|".magenta().reset()} ${this.formatMessage(message)}`,
+        `${new Date().toJSON()} ${"|".magenta().reset()} ${importance} ${"|".magenta().reset()} ${message}`,
       );
 
       return;
@@ -46,6 +151,11 @@ export class Logger {
     );
   }
 
+  // eslint-disable-next-line
+  private getStrictType(value: any) {
+    return Object.prototype.toString.call(value).slice(8, -1);
+  }
+
   private runCallback(logData: LogData) {
     if (!logData?.callback) {
       return;
@@ -54,16 +164,14 @@ export class Logger {
     logData
       .callback(logData)
       .then()
-      .catch((error) =>
-        this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-      );
+      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
   }
 
   // eslint-disable-next-line
   private getLogData(message: any, logLevel: string, logOptions?: LogOptions) {
     return {
       ...logOptions,
-      message: this.formatMessage(message),
+      message: this.complexFormatMessage(message),
       created: new Date().toJSON(),
       logLevel: logLevel.trim().toLowerCase(),
     };
@@ -83,15 +191,17 @@ export class Logger {
     return tokenize(message)
       .map((t) => {
         if (t.type === TokenType.StringLiteral) {
-          return t.value.yellow().reset();
+          return t.value.replace(/"/g, "'").yellow().reset();
         } else if (t.type === TokenType.BooleanLiteral) {
           return t.value.blue().reset();
         } else if (t.type === TokenType.NullLiteral) {
-          return t.value.red().reset();
+          return t.value.magenta().reset();
         } else if (t.type === TokenType.NumberLiteral) {
           return t.value.green().reset();
         } else if (t.type === TokenType.Comma || t.type === TokenType.Colon) {
           return (t.value += " ");
+        } else if (t.type === TokenType.StringKey) {
+          return t.value.replace(/"/g, "");
         }
 
         return t.value;
@@ -103,9 +213,7 @@ export class Logger {
   public debug(message: any, logOptions?: LogOptions) {
     this.debugAsync(message, logOptions)
       .then()
-      .catch((error) =>
-        this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-      );
+      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
   }
 
   // eslint-disable-next-line
@@ -120,6 +228,8 @@ export class Logger {
 
     if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
       message = this.colorizeJson(logData.message);
+    } else {
+      message = logData.message;
     }
 
     this.print(
@@ -136,9 +246,7 @@ export class Logger {
   public info(message: any, logOptions?: LogOptions) {
     this.infoAsync(message, logOptions)
       .then()
-      .catch((error) =>
-        this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-      );
+      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
   }
 
   // eslint-disable-next-line
@@ -153,6 +261,8 @@ export class Logger {
 
     if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
       message = this.colorizeJson(logData.message);
+    } else {
+      message = logData.message;
     }
 
     this.print(
@@ -169,9 +279,7 @@ export class Logger {
   public error(message: any, logOptions?: LogOptions) {
     this.errorAsync(message, logOptions)
       .then()
-      .catch((error) =>
-        this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-      );
+      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
   }
 
   // eslint-disable-next-line
@@ -186,6 +294,8 @@ export class Logger {
 
     if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
       message = this.colorizeJson(logData.message);
+    } else {
+      message = logData.message;
     }
 
     this.print(
@@ -202,9 +312,7 @@ export class Logger {
   public warn(message: any, logOptions?: LogOptions) {
     this.warnAsync(message, logOptions)
       .then()
-      .catch((error) =>
-        this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-      );
+      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
   }
 
   // eslint-disable-next-line
@@ -219,6 +327,8 @@ export class Logger {
 
     if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
       message = this.colorizeJson(logData.message);
+    } else {
+      message = logData.message;
     }
 
     this.print(
@@ -235,9 +345,7 @@ export class Logger {
   public fatal(message: any, logOptions?: LogOptions) {
     this.fatalAsync(message, logOptions)
       .then()
-      .catch((error) =>
-        this.print(this.formatMessage(error), Importance.ERR.redBg().reset()),
-      );
+      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
   }
 
   // eslint-disable-next-line
@@ -252,6 +360,8 @@ export class Logger {
 
     if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
       message = this.colorizeJson(logData.message);
+    } else {
+      message = logData.message;
     }
 
     this.print(

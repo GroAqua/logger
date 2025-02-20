@@ -33,7 +33,10 @@ const tokenTypes: TokenDefinition[] = [
   { regex: /^"(?:\\.|[^"\\])*"(?=\s*:)/, tokenType: "StringKey" },
   { regex: /^"(?:\\.|[^"\\])*"/, tokenType: "StringLiteral" },
   { regex: /^true|^false/, tokenType: "BooleanLiteral" },
-  { regex: /^null/, tokenType: "NullLiteral" },
+  {
+    regex: /^null/,
+    tokenType: "NullLiteral",
+  },
 ];
 
 export function tokenize(input: string): Token[] {
