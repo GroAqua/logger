@@ -6,5 +6,6 @@ export type LogOptions = {
   username?: string;
   userId?: string;
   shouldColorizeJson?: boolean;
+  verbose?: boolean;
   callback?: (logData: LogData) => Promise<void>;
 };

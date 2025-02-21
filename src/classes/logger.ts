@@ -8,14 +8,16 @@ import { LogData } from "../types/logData";
 import { LogOptions } from "../types/logOptions";
 import { tokenize } from "./lexer";
 import { TokenType } from "../enums/tokenType";
+import { LogFormat } from "../types/logFormat";
 
 export class Logger {
   private static _level: Level = Level.INF;
 
   // eslint-disable-next-line
-  private complexFormatMessage(message: any): string {
-    if (message === null) return "null";
-    if (message === undefined) return "undefined";
+  private complexFormatMessage(message: any): LogFormat {
+    if (message === null) return { type: "null", length: 0, data: null };
+    if (message === undefined)
+      return { type: "undefined", length: 0, data: null };
 
     if (typeof message === "object") {
       if (this.getStrictType(message).toLowerCase() === "map") {
@@ -27,37 +29,37 @@ export class Logger {
       }
 
       if (this.getStrictType(message).toLowerCase() === "array") {
-        return JSON.stringify({
+        return {
           type: "Array",
           length: message.length,
           data: message,
-        });
+        };
       }
 
       if (this.getStrictType(message).toLowerCase() === "error") {
-        return JSON.stringify({
+        return {
           type: "Error",
           length: Object.keys(message).length,
           data: JSON.stringify(
             message.stack || message.message || message.toString(),
           ),
-        });
+        };
       }
 
       if (this.getStrictType(message).toLowerCase() === "date") {
-        return JSON.stringify({
+        return {
           type: "Date",
           length: message.toISOString().length,
           data: message.toISOString(),
-        });
+        };
       }
 
       if (this.getStrictType(message).toLowerCase() === "regexp") {
-        return JSON.stringify({
+        return {
           type: "RegExp",
           length: message.toString().length,
           data: message.toString(),
-        });
+        };
       }
 
       if (this.getStrictType(message).toLowerCase() === "object") {
@@ -71,65 +73,69 @@ export class Logger {
           Object.assign(json, { data: "{}" });
         }
 
-        return JSON.stringify(json);
+        return json;
       }
 
       try {
         const msg = JSON.stringify(message);
         if (msg === "{}") {
-          return JSON.stringify({
+          return {
             type: typeof message,
             length: message?.length || 0,
             data: message.toString(),
-          });
+          };
         }
-        return msg;
+        return {
+          type: typeof message,
+          length: message?.length || 0,
+          data: JSON.parse(msg),
+        };
         // eslint-disable-next-line
       } catch (err: any) {
-        return JSON.stringify({
+        return {
           type: "Error",
           length: 0,
           data: JSON.stringify({
             type: "Error",
             data: JSON.stringify(err?.stack || err?.message || err?.toString()),
           }),
-        });
+        };
       }
     } else if (typeof message !== "string") {
-      return JSON.stringify({
+      return {
         type: typeof message,
         length: message?.length || 0,
         data: message.toString(),
-      });
+      };
     }
 
-    return JSON.stringify({
+    return {
       type: "String",
       length: message?.length || 0,
       data: message,
-    });
+    };
   }
 
   // eslint-disable-next-line
-  private unwrapMap(map: Map<any, any>): string {
+  private unwrapMap(map: Map<any, any>): LogFormat {
     // eslint-disable-next-line
     const entries: any[] = Array.from(map.entries()).map(([key, value]) => {
       return { key: key, value: value };
     });
 
-    return JSON.stringify({
+    return {
       type: "Map",
       length: entries.length,
       data: entries,
-    });
+    };
   }
 
   // eslint-disable-next-line
-  private unwrapSet(set: Set<any>): string {
+  private unwrapSet(set: Set<any>): LogFormat {
     // eslint-disable-next-line
     const values: any[] = Array.from(set.values()).map((value) => value);
 
-    return JSON.stringify({ type: "Set", length: values.length, data: values });
+    return { type: "Set", length: values.length, data: values };
   }
 
   private print(
@@ -209,6 +215,23 @@ export class Logger {
       .join("");
   }
 
+  private getMessage(logData: LogData, logOptions?: LogOptions) {
+    if (
+      logOptions?.shouldColorizeJson &&
+      this.isValidJSON(JSON.stringify(logData.message))
+    ) {
+      return this.colorizeJson(
+        JSON.stringify(
+          logOptions?.verbose ? logData.message : logData.message.data,
+        ),
+      );
+    }
+
+    return JSON.stringify(
+      logOptions?.verbose ? logData.message : logData.message.data,
+    );
+  }
+
   // eslint-disable-next-line
   public debug(message: any, logOptions?: LogOptions) {
     this.debugAsync(message, logOptions)
@@ -226,11 +249,7 @@ export class Logger {
       logOptions,
     );
 
-    if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
-      message = this.colorizeJson(logData.message);
-    } else {
-      message = logData.message;
-    }
+    message = this.getMessage(logData, logOptions);
 
     this.print(
       message,
@@ -259,11 +278,7 @@ export class Logger {
       logOptions,
     );
 
-    if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
-      message = this.colorizeJson(logData.message);
-    } else {
-      message = logData.message;
-    }
+    message = this.getMessage(logData, logOptions);
 
     this.print(
       message,
@@ -292,11 +307,7 @@ export class Logger {
       logOptions,
     );
 
-    if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
-      message = this.colorizeJson(logData.message);
-    } else {
-      message = logData.message;
-    }
+    message = this.getMessage(logData, logOptions);
 
     this.print(
       message,
@@ -325,11 +336,7 @@ export class Logger {
       logOptions,
     );
 
-    if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
-      message = this.colorizeJson(logData.message);
-    } else {
-      message = logData.message;
-    }
+    message = this.getMessage(logData, logOptions);
 
     this.print(
       message,
@@ -358,11 +365,7 @@ export class Logger {
       logOptions,
     );
 
-    if (logOptions?.shouldColorizeJson && this.isValidJSON(logData.message)) {
-      message = this.colorizeJson(logData.message);
-    } else {
-      message = logData.message;
-    }
+    message = this.getMessage(logData, logOptions);
 
     this.print(
       message,
