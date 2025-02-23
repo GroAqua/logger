@@ -9,16 +9,34 @@ import { LogOptions } from "../types/logOptions";
 import { tokenize } from "./lexer";
 import { TokenType } from "../enums/tokenType";
 import { LogFormat } from "../types/logFormat";
+import { DataType } from "../enums/dataType";
 
 export class Logger {
   private static _level: Level = Level.INF;
+  // eslint-disable-next-line
+  private _dataTypeParserMap: Map<string, (message: any) => LogFormat> =
+    new Map();
+
+  constructor() {
+    this.initDataTypeParserMap();
+  }
+
+  private initDataTypeParserMap() {
+    this._dataTypeParserMap.set(DataType.OBJECT, this.parseObject);
+    this._dataTypeParserMap.set(DataType.ERROR, this.parseError);
+    this._dataTypeParserMap.set(DataType.MAP, this.parseMap);
+    this._dataTypeParserMap.set(DataType.SET, this.parseSet);
+    this._dataTypeParserMap.set(DataType.ARRAY, this.parseArray);
+    this._dataTypeParserMap.set(DataType.DATE, this.parseDate);
+    this._dataTypeParserMap.set(DataType.REGEXP, this.parseRegExp);
+  }
 
   // eslint-disable-next-line
-  private getError(error: any): LogFormat {
+  private parseError(error: any): LogFormat {
     if (this.isValidJSON(error)) {
       return {
         length: Object.keys(error).length,
-        type: "Error",
+        type: DataType.ERROR,
         data: error,
       };
     }
@@ -26,14 +44,14 @@ export class Logger {
     if (typeof error !== "string") {
       const data = { message: error?.message || "", stack: error?.stack || "" };
       return {
-        type: "Error",
+        type: DataType.ERROR,
         length: Object.keys(data).length,
         data: data,
       };
     }
 
     return {
-      type: "Error",
+      type: DataType.ERROR,
       length: error.length,
       data: error,
     };
@@ -46,54 +64,12 @@ export class Logger {
       return { type: "undefined", length: 0, data: null };
 
     if (typeof message === "object") {
-      if (this.getStrictType(message).toLowerCase() === "map") {
-        return this.unwrapMap(message);
-      }
-
-      if (this.getStrictType(message).toLowerCase() === "set") {
-        return this.unwrapSet(message);
-      }
-
-      if (this.getStrictType(message).toLowerCase() === "array") {
-        return {
-          type: "Array",
-          length: message.length,
-          data: message,
-        };
-      }
-
-      if (this.getStrictType(message).toLowerCase() === "error") {
-        return this.getError(message);
-      }
-
-      if (this.getStrictType(message).toLowerCase() === "date") {
-        return {
-          type: "Date",
-          length: message.toISOString().length,
-          data: message.toISOString(),
-        };
-      }
-
-      if (this.getStrictType(message).toLowerCase() === "regexp") {
-        return {
-          type: "RegExp",
-          length: message.toString().length,
-          data: message.toString(),
-        };
-      }
-
-      if (this.getStrictType(message).toLowerCase() === "object") {
-        const json = {
-          type: "Object",
-          length: Object.keys(message).length,
-          data: { ...message },
-        };
-
-        if (!message) {
-          Object.assign(json, { data: "{}" });
-        }
-
-        return json;
+      if (
+        this._dataTypeParserMap.has(this.getStrictType(message).toLowerCase())
+      ) {
+        return this._dataTypeParserMap.get(
+          this.getStrictType(message).toLowerCase(),
+        )!(message);
       }
 
       try {
@@ -112,7 +88,7 @@ export class Logger {
         };
         // eslint-disable-next-line
       } catch (err: any) {
-        return this.getError(message);
+        return this.parseError(message);
       }
     } else if (typeof message !== "string") {
       return {
@@ -123,32 +99,78 @@ export class Logger {
     }
 
     return {
-      type: "String",
+      type: DataType.STRING,
       length: message?.length || 0,
       data: message,
     };
   }
 
   // eslint-disable-next-line
-  private unwrapMap(map: Map<any, any>): LogFormat {
+  private parseObject(message: any): LogFormat {
+    const json = {
+      type: DataType.OBJECT,
+      length: Object.keys(message).length,
+      data: { ...message },
+    };
+
+    if (!message) {
+      Object.assign(json, { data: "{}" });
+    }
+
+    return json;
+  }
+
+  // eslint-disable-next-line
+  private parseRegExp(message: any): LogFormat {
+    return {
+      type: DataType.REGEXP,
+      length: message.toString().length,
+      data: message.toString(),
+    };
+  }
+
+  // eslint-disable-next-line
+  private parseDate(message: any): LogFormat {
+    return {
+      type: DataType.DATE,
+      length: message.toISOString().length,
+      data: message.toISOString(),
+    };
+  }
+
+  // eslint-disable-next-line
+  private parseArray(message: any): LogFormat {
+    return {
+      type: DataType.ARRAY,
+      length: message.length,
+      data: message,
+    };
+  }
+
+  // eslint-disable-next-line
+  private parseMap(message: any): LogFormat {
+    // eslint-disable-next-line
+    const map = message as Map<any, any>;
     // eslint-disable-next-line
     const entries: any[] = Array.from(map.entries()).map(([key, value]) => {
       return { key: key, value: value };
     });
 
     return {
-      type: "Map",
+      type: DataType.MAP,
       length: entries.length,
       data: entries,
     };
   }
 
   // eslint-disable-next-line
-  private unwrapSet(set: Set<any>): LogFormat {
+  private parseSet(message: any): LogFormat {
+    // eslint-disable-next-line
+    const set = message as Set<any>;
     // eslint-disable-next-line
     const values: any[] = Array.from(set.values()).map((value) => value);
 
-    return { type: "Set", length: values.length, data: values };
+    return { type: DataType.SET, length: values.length, data: values };
   }
 
   private print(
@@ -263,13 +285,6 @@ export class Logger {
 
   // eslint-disable-next-line
   public debug(message: any, logOptions?: LogOptions) {
-    this.debugAsync(message, logOptions)
-      .then()
-      .catch((error) => this.printError(error, logOptions));
-  }
-
-  // eslint-disable-next-line
-  private async debugAsync(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.DEB) return;
 
     const logData: LogData = this.getLogData(
@@ -278,10 +293,8 @@ export class Logger {
       logOptions,
     );
 
-    message = this.getMessage(logData, logOptions);
-
     this.print(
-      message,
+      this.getMessage(logData, logOptions),
       Importance.DEB.blueBg().reset(),
       ForegroundColor.Blue,
       logData,
@@ -292,13 +305,6 @@ export class Logger {
 
   // eslint-disable-next-line
   public info(message: any, logOptions?: LogOptions) {
-    this.infoAsync(message, logOptions)
-      .then()
-      .catch((error) => this.printError(error, logOptions));
-  }
-
-  // eslint-disable-next-line
-  private async infoAsync(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.INF) return;
 
     const logData: LogData = this.getLogData(
@@ -307,10 +313,8 @@ export class Logger {
       logOptions,
     );
 
-    message = this.getMessage(logData, logOptions);
-
     this.print(
-      message,
+      this.getMessage(logData, logOptions),
       Importance.INF.greenBg().reset(),
       ForegroundColor.Green,
       logData,
@@ -321,13 +325,6 @@ export class Logger {
 
   // eslint-disable-next-line
   public warn(message: any, logOptions?: LogOptions) {
-    this.warnAsync(message, logOptions)
-      .then()
-      .catch((error) => this.printError(error, logOptions));
-  }
-
-  // eslint-disable-next-line
-  private async warnAsync(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.WAR) return;
 
     const logData: LogData = this.getLogData(
@@ -336,10 +333,8 @@ export class Logger {
       logOptions,
     );
 
-    message = this.getMessage(logData, logOptions);
-
     this.print(
-      message,
+      this.getMessage(logData, logOptions),
       Importance.WAR.yellowBg().reset(),
       ForegroundColor.Yellow,
       logData,
@@ -350,13 +345,6 @@ export class Logger {
 
   // eslint-disable-next-line
   public error(message: any, logOptions?: LogOptions) {
-    this.errorAsync(message, logOptions)
-      .then()
-      .catch((error) => this.printError(error, logOptions));
-  }
-
-  // eslint-disable-next-line
-  private async errorAsync(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.ERR) return;
 
     const logData: LogData = this.getLogData(
@@ -365,10 +353,8 @@ export class Logger {
       logOptions,
     );
 
-    message = this.getMessage(logData, logOptions);
-
     this.print(
-      message,
+      this.getMessage(logData, logOptions),
       Importance.ERR.redBg().reset(),
       ForegroundColor.Red,
       logData,
@@ -379,13 +365,6 @@ export class Logger {
 
   // eslint-disable-next-line
   public fatal(message: any, logOptions?: LogOptions) {
-    this.fatalAsync(message, logOptions)
-      .then()
-      .catch((error) => this.printError(error, logOptions));
-  }
-
-  // eslint-disable-next-line
-  private async fatalAsync(message: any, logOptions?: LogOptions) {
     if (Logger._level > Level.FAT) return;
 
     const logData: LogData = this.getLogData(
@@ -394,10 +373,8 @@ export class Logger {
       logOptions,
     );
 
-    message = this.getMessage(logData, logOptions);
-
     this.print(
-      message,
+      this.getMessage(logData, logOptions),
       Importance.FAT.magentaBg().reset(),
       ForegroundColor.Magenta,
       logData,
