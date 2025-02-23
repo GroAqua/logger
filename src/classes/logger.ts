@@ -41,7 +41,7 @@ export class Logger {
       };
     }
 
-    if (typeof error !== "string") {
+    if (typeof error !== DataType.STRING) {
       const data = { message: error?.message || "", stack: error?.stack || "" };
       return {
         type: DataType.ERROR,
@@ -58,12 +58,12 @@ export class Logger {
   }
 
   // eslint-disable-next-line
-  private complexFormatMessage(message: any): LogFormat {
+  private parseMessage(message: any): LogFormat {
     if (message === null) return { type: "null", length: 0, data: null };
     if (message === undefined)
       return { type: "undefined", length: 0, data: null };
 
-    if (typeof message === "object") {
+    if (typeof message === DataType.OBJECT) {
       if (
         this._dataTypeParserMap.has(this.getStrictType(message).toLowerCase())
       ) {
@@ -214,7 +214,7 @@ export class Logger {
   private printError(error: any, logOptions?: LogOptions) {
     const logData: LogData = this.getLogData(error, Importance.INF, logOptions);
 
-    const message = this.getMessage(logData, logOptions);
+    const message = this.addOptionsToMessage(logData, logOptions);
 
     this.print(
       message,
@@ -228,7 +228,7 @@ export class Logger {
   private getLogData(message: any, logLevel: string, logOptions?: LogOptions) {
     return {
       ...logOptions,
-      message: this.complexFormatMessage(message),
+      message: this.parseMessage(message),
       created: new Date().toJSON(),
       logLevel: logLevel.trim().toLowerCase(),
     };
@@ -266,7 +266,7 @@ export class Logger {
       .join("");
   }
 
-  private getMessage(logData: LogData, logOptions?: LogOptions) {
+  private addOptionsToMessage(logData: LogData, logOptions?: LogOptions) {
     if (
       logOptions?.shouldColorizeJson &&
       this.isValidJSON(JSON.stringify(logData.message))
@@ -294,7 +294,7 @@ export class Logger {
     );
 
     this.print(
-      this.getMessage(logData, logOptions),
+      this.addOptionsToMessage(logData, logOptions),
       Importance.DEB.blueBg().reset(),
       ForegroundColor.Blue,
       logData,
@@ -314,7 +314,7 @@ export class Logger {
     );
 
     this.print(
-      this.getMessage(logData, logOptions),
+      this.addOptionsToMessage(logData, logOptions),
       Importance.INF.greenBg().reset(),
       ForegroundColor.Green,
       logData,
@@ -334,7 +334,7 @@ export class Logger {
     );
 
     this.print(
-      this.getMessage(logData, logOptions),
+      this.addOptionsToMessage(logData, logOptions),
       Importance.WAR.yellowBg().reset(),
       ForegroundColor.Yellow,
       logData,
@@ -354,7 +354,7 @@ export class Logger {
     );
 
     this.print(
-      this.getMessage(logData, logOptions),
+      this.addOptionsToMessage(logData, logOptions),
       Importance.ERR.redBg().reset(),
       ForegroundColor.Red,
       logData,
@@ -374,7 +374,7 @@ export class Logger {
     );
 
     this.print(
-      this.getMessage(logData, logOptions),
+      this.addOptionsToMessage(logData, logOptions),
       Importance.FAT.magentaBg().reset(),
       ForegroundColor.Magenta,
       logData,

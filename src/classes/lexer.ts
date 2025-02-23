@@ -1,5 +1,5 @@
 // Created by https://github.com/joeattardi
-// source: https://github.com/joeattardi/json-colorizer/blob/main/src/lexer.ts
+// Source: https://github.com/joeattardi/json-colorizer/blob/main/src/lexer.ts
 
 export type TokenType =
   | "Whitespace"
