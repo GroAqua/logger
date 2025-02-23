@@ -24,10 +24,11 @@ export class Logger {
     }
 
     if (typeof error !== "string") {
+      const data = { message: error?.message || "", stack: error?.stack || "" };
       return {
         type: "Error",
-        length: Object.keys(error).length,
-        data: { message: error?.message || "", stack: error?.stack || "" },
+        length: Object.keys(data).length,
+        data: data,
       };
     }
 
@@ -62,11 +63,7 @@ export class Logger {
       }
 
       if (this.getStrictType(message).toLowerCase() === "error") {
-        return {
-          type: "Error",
-          length: Object.keys(message).length,
-          data: this.getError(message),
-        };
+        return this.getError(message);
       }
 
       if (this.getStrictType(message).toLowerCase() === "date") {
@@ -115,14 +112,7 @@ export class Logger {
         };
         // eslint-disable-next-line
       } catch (err: any) {
-        return {
-          type: "Error",
-          length: 0,
-          data: JSON.stringify({
-            type: "Error",
-            data: this.getError(err),
-          }),
-        };
+        return this.getError(message);
       }
     } else if (typeof message !== "string") {
       return {
