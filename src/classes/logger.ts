@@ -18,28 +18,27 @@ export class Logger {
     if (this.isValidJSON(error)) {
       return {
         length: Object.keys(error).length,
-        type: 'Error',
+        type: "Error",
         data: error,
       };
     }
 
-    if (typeof error !== 'string') {
+    if (typeof error !== "string") {
       return {
-        type: 'Error',
+        type: "Error",
         length: Object.keys(error).length,
-        data: {message: error?.message || '',
-        stack: error?.stack || ''}
-      }
+        data: { message: error?.message || "", stack: error?.stack || "" },
+      };
     }
 
     return {
-      type: 'Error',
+      type: "Error",
       length: error.length,
       data: error,
     };
   }
 
-// eslint-disable-next-line
+  // eslint-disable-next-line
   private complexFormatMessage(message: any): LogFormat {
     if (message === null) return { type: "null", length: 0, data: null };
     if (message === undefined)
@@ -66,8 +65,7 @@ export class Logger {
         return {
           type: "Error",
           length: Object.keys(message).length,
-          data:
-            this.getError(message),
+          data: this.getError(message),
         };
       }
 
@@ -202,11 +200,7 @@ export class Logger {
 
   // eslint-disable-next-line
   private printError(error: any, logOptions?: LogOptions) {
-    const logData: LogData = this.getLogData(
-      error,
-      Importance.INF,
-      logOptions,
-    );
+    const logData: LogData = this.getLogData(error, Importance.INF, logOptions);
 
     const message = this.getMessage(logData, logOptions);
 
@@ -364,7 +358,6 @@ export class Logger {
     this.runCallback(logData, logOptions);
   }
 
-
   // eslint-disable-next-line
   public error(message: any, logOptions?: LogOptions) {
     this.errorAsync(message, logOptions)
@@ -393,7 +386,6 @@ export class Logger {
 
     this.runCallback(logData, logOptions);
   }
-
 
   // eslint-disable-next-line
   public fatal(message: any, logOptions?: LogOptions) {
