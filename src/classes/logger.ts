@@ -14,6 +14,32 @@ export class Logger {
   private static _level: Level = Level.INF;
 
   // eslint-disable-next-line
+  private getError(error: any): LogFormat {
+    if (this.isValidJSON(error)) {
+      return {
+        length: Object.keys(error).length,
+        type: 'Error',
+        data: error,
+      };
+    }
+
+    if (typeof error !== 'string') {
+      return {
+        type: 'Error',
+        length: Object.keys(error).length,
+        data: {message: error?.message || '',
+        stack: error?.stack || ''}
+      }
+    }
+
+    return {
+      type: 'Error',
+      length: error.length,
+      data: error,
+    };
+  }
+
+// eslint-disable-next-line
   private complexFormatMessage(message: any): LogFormat {
     if (message === null) return { type: "null", length: 0, data: null };
     if (message === undefined)
@@ -40,9 +66,8 @@ export class Logger {
         return {
           type: "Error",
           length: Object.keys(message).length,
-          data: JSON.stringify(
-            message.stack || message.message || message.toString(),
-          ),
+          data:
+            this.getError(message),
         };
       }
 
@@ -97,7 +122,7 @@ export class Logger {
           length: 0,
           data: JSON.stringify({
             type: "Error",
-            data: JSON.stringify(err?.stack || err?.message || err?.toString()),
+            data: this.getError(err),
           }),
         };
       }
@@ -162,7 +187,7 @@ export class Logger {
     return Object.prototype.toString.call(value).slice(8, -1);
   }
 
-  private runCallback(logData: LogData) {
+  private runCallback(logData: LogData, logOptions?: LogOptions) {
     if (!logData?.callback) {
       return;
     }
@@ -170,7 +195,27 @@ export class Logger {
     logData
       .callback(logData)
       .then()
-      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
+      .catch((error) => {
+        this.printError(error, logOptions);
+      });
+  }
+
+  // eslint-disable-next-line
+  private printError(error: any, logOptions?: LogOptions) {
+    const logData: LogData = this.getLogData(
+      error,
+      Importance.INF,
+      logOptions,
+    );
+
+    const message = this.getMessage(logData, logOptions);
+
+    this.print(
+      message,
+      Importance.ERR.redBg().reset(),
+      ForegroundColor.Red,
+      logData,
+    );
   }
 
   // eslint-disable-next-line
@@ -236,7 +281,7 @@ export class Logger {
   public debug(message: any, logOptions?: LogOptions) {
     this.debugAsync(message, logOptions)
       .then()
-      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
+      .catch((error) => this.printError(error, logOptions));
   }
 
   // eslint-disable-next-line
@@ -258,14 +303,14 @@ export class Logger {
       logData,
     );
 
-    this.runCallback(logData);
+    this.runCallback(logData, logOptions);
   }
 
   // eslint-disable-next-line
   public info(message: any, logOptions?: LogOptions) {
     this.infoAsync(message, logOptions)
       .then()
-      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
+      .catch((error) => this.printError(error, logOptions));
   }
 
   // eslint-disable-next-line
@@ -287,43 +332,14 @@ export class Logger {
       logData,
     );
 
-    this.runCallback(logData);
-  }
-
-  // eslint-disable-next-line
-  public error(message: any, logOptions?: LogOptions) {
-    this.errorAsync(message, logOptions)
-      .then()
-      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
-  }
-
-  // eslint-disable-next-line
-  private async errorAsync(message: any, logOptions?: LogOptions) {
-    if (Logger._level > Level.ERR) return;
-
-    const logData: LogData = this.getLogData(
-      message,
-      Importance.ERR,
-      logOptions,
-    );
-
-    message = this.getMessage(logData, logOptions);
-
-    this.print(
-      message,
-      Importance.ERR.redBg().reset(),
-      ForegroundColor.Red,
-      logData,
-    );
-
-    this.runCallback(logData);
+    this.runCallback(logData, logOptions);
   }
 
   // eslint-disable-next-line
   public warn(message: any, logOptions?: LogOptions) {
     this.warnAsync(message, logOptions)
       .then()
-      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
+      .catch((error) => this.printError(error, logOptions));
   }
 
   // eslint-disable-next-line
@@ -345,14 +361,45 @@ export class Logger {
       logData,
     );
 
-    this.runCallback(logData);
+    this.runCallback(logData, logOptions);
   }
+
+
+  // eslint-disable-next-line
+  public error(message: any, logOptions?: LogOptions) {
+    this.errorAsync(message, logOptions)
+      .then()
+      .catch((error) => this.printError(error, logOptions));
+  }
+
+  // eslint-disable-next-line
+  private async errorAsync(message: any, logOptions?: LogOptions) {
+    if (Logger._level > Level.ERR) return;
+
+    const logData: LogData = this.getLogData(
+      message,
+      Importance.ERR,
+      logOptions,
+    );
+
+    message = this.getMessage(logData, logOptions);
+
+    this.print(
+      message,
+      Importance.ERR.redBg().reset(),
+      ForegroundColor.Red,
+      logData,
+    );
+
+    this.runCallback(logData, logOptions);
+  }
+
 
   // eslint-disable-next-line
   public fatal(message: any, logOptions?: LogOptions) {
     this.fatalAsync(message, logOptions)
       .then()
-      .catch((error) => this.print(error, Importance.ERR.redBg().reset()));
+      .catch((error) => this.printError(error, logOptions));
   }
 
   // eslint-disable-next-line
@@ -374,7 +421,7 @@ export class Logger {
       logData,
     );
 
-    this.runCallback(logData);
+    this.runCallback(logData, logOptions);
   }
 
   public static setLevel(level: Level) {
