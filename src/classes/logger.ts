@@ -78,7 +78,7 @@ export class Logger {
           return {
             type: typeof message,
             length: message?.length || 0,
-            data: message.toString(),
+            data: message,
           };
         }
         return {
@@ -90,7 +90,7 @@ export class Logger {
       } catch (err: any) {
         return this.parseError(message);
       }
-    } else if (typeof message !== "string") {
+    } else if (typeof message !== DataType.STRING) {
       return {
         type: typeof message,
         length: message?.length || 0,
@@ -188,7 +188,7 @@ export class Logger {
     }
 
     console.log(
-      `${logData.created} ${"|".magenta().reset()} ${importance} ${"|".magenta().reset()}${logData.username ? `${` ( ${logData.username.cyan().reset()}`}${" )"}` : ""} ${logData.key && logData.value ? `[ ${keyValueColor ? keyValueColor : ""}${logData.key.toUpperCase()}: ${logData.value.toUpperCase()}${Style.Reset} ]` : ""} ${message}`,
+      `${logData.created} ${"|".magenta().reset()} ${importance} ${"|".magenta().reset()}${logData.username ? `${` ( ${logData.username.cyan().reset()}`}${" )"}` : ""} ${logData.key && logData.value ? `[ ${keyValueColor ? keyValueColor : ""}${logData.key.toUpperCase()}: ${logData.value.toUpperCase()}${Style.Reset} ]` : ""} ${logData.logFormat.type === DataType.STRING ? logData.originalMessage : message}`,
     );
   }
 
@@ -213,7 +213,6 @@ export class Logger {
   // eslint-disable-next-line
   private printError(error: any, logOptions?: LogOptions) {
     const logData: LogData = this.getLogData(error, Importance.INF, logOptions);
-
     const message = this.addOptionsToMessage(logData, logOptions);
 
     this.print(
@@ -228,9 +227,10 @@ export class Logger {
   private getLogData(message: any, logLevel: string, logOptions?: LogOptions) {
     return {
       ...logOptions,
-      message: this.parseMessage(message),
+      logFormat: this.parseMessage(message),
       created: new Date().toJSON(),
       logLevel: logLevel.trim().toLowerCase(),
+      originalMessage: message,
     };
   }
 
@@ -269,17 +269,17 @@ export class Logger {
   private addOptionsToMessage(logData: LogData, logOptions?: LogOptions) {
     if (
       logOptions?.shouldColorizeJson &&
-      this.isValidJSON(JSON.stringify(logData.message))
+      this.isValidJSON(JSON.stringify(logData.logFormat))
     ) {
       return this.colorizeJson(
         JSON.stringify(
-          logOptions?.verbose ? logData.message : logData.message.data,
+          logOptions?.verbose ? logData.logFormat : logData.logFormat.data,
         ),
       );
     }
 
     return JSON.stringify(
-      logOptions?.verbose ? logData.message : logData.message.data,
+      logOptions?.verbose ? logData.logFormat : logData.logFormat.data,
     );
   }
 
@@ -290,7 +290,7 @@ export class Logger {
     const logData: LogData = this.getLogData(
       message,
       Importance.DEB,
-      logOptions,
+      logOptions
     );
 
     this.print(

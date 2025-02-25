@@ -4,7 +4,8 @@ export type LogData = {
   created: string;
   key?: string;
   logLevel?: string;
-  message: LogFormat;
+  logFormat: LogFormat;
+  originalMessage: string;
   userId?: string;
   username?: string;
   value?: string;
