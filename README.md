@@ -14,8 +14,7 @@ const logger = new Logger();
 
 Examples
 ```
-import { Logger } from '@groaqua/logger';
-import { Level } from '@groaqua/logger/dist/enums/level';
+import { Logger, Level, LogData, LogOptions } from '@groaqua/logger';
 
 const logger = new Logger();
 
@@ -28,13 +27,15 @@ logger.error("Hello, world!");
 logger.fatal("Hello, world!");
 
 logger.info({name: "Peter Parker", age: 25, isSpiderman: true})
-logger.info({name: "Peter Parker", age: 25, isSpiderman: true},{
+
+const logOptions: LogOptions = {
   shouldColorizeJson: true,
   verbose: true,
-  callback: async (logData) => {
+  callback: async (logData: LogData) => {
     console.log(logData);
   }
-})
+}
+logger.info({name: "Peter Parker", age: 25, isSpiderman: true}, logOptions)
 ```
 Ouput
 
