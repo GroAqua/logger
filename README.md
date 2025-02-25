@@ -7,7 +7,7 @@ npm i @groaqua/logger
 
 How to use
 ```
-import { Logger } from "./classes/logger";
+import { Logger } from '@groaqua/logger';
 
 const logger = new Logger();
 ```
