@@ -37,3 +37,4 @@ logger.info({name: "Peter Parker", age: 25, isSpiderman: true},{
 })
 ```
 Ouput
+![](https://github.com/GroAqua/logger/blob/main/screenshot.png?raw=true)
