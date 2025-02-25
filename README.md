@@ -14,8 +14,8 @@ const logger = new Logger();
 
 Examples
 ```
-import { Logger } from "./classes/logger";
-import { Level } from "./enums/level";
+import { Logger } from '@groaqua/logger';
+import { Level } from '@groaqua/logger/dist/enums/level';
 
 const logger = new Logger();
 
