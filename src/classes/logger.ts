@@ -1,7 +1,6 @@
 import "../string/string.extensions";
 import { ForegroundColor } from "../enums/foregroundColor";
 import { Importance } from "../enums/importance";
-import { Style } from "../enums/style";
 import { BackgroundColor } from "../enums/backgroundColor";
 import { Level } from "../enums/level";
 import { LogData } from "../types/logData";
@@ -22,13 +21,24 @@ export class Logger {
   }
 
   private initDataTypeParserMap() {
-    this._dataTypeParserMap.set(DataType.OBJECT, this.parseObject);
-    this._dataTypeParserMap.set(DataType.ERROR, this.parseError);
-    this._dataTypeParserMap.set(DataType.MAP, this.parseMap);
-    this._dataTypeParserMap.set(DataType.SET, this.parseSet);
-    this._dataTypeParserMap.set(DataType.ARRAY, this.parseArray);
-    this._dataTypeParserMap.set(DataType.DATE, this.parseDate);
-    this._dataTypeParserMap.set(DataType.REGEXP, this.parseRegExp);
+    this._dataTypeParserMap.set(DataType.OBJECT, this.parseObject.bind(this));
+    this._dataTypeParserMap.set(DataType.ERROR, this.parseError.bind(this));
+    this._dataTypeParserMap.set(DataType.MAP, this.parseMap.bind(this));
+    this._dataTypeParserMap.set(DataType.SET, this.parseSet.bind(this));
+    this._dataTypeParserMap.set(DataType.ARRAY, this.parseArray.bind(this));
+    this._dataTypeParserMap.set(DataType.DATE, this.parseDate.bind(this));
+    this._dataTypeParserMap.set(DataType.REGEXP, this.parseRegExp.bind(this));
+  }
+
+  // eslint-disable-next-line
+  private isValidJSON(str: any) {
+    try {
+      JSON.parse(str);
+      return true;
+      // eslint-disable-next-line
+    } catch (e: any) {
+      return false;
+    }
   }
 
   // eslint-disable-next-line
@@ -187,9 +197,26 @@ export class Logger {
       return;
     }
 
-    console.log(
-      `${logData.created} ${"|".magenta().reset()} ${importance} ${"|".magenta().reset()}${logData.username ? `${` ( ${logData.username.cyan().reset()}`}${" )"}` : ""} ${logData.key && logData.value ? `[ ${keyValueColor ? keyValueColor : ""}${logData.key.toUpperCase()}: ${logData.value.toUpperCase()}${Style.Reset} ]` : ""} ${logData.logFormat.type === DataType.STRING ? logData.originalMessage : message}`,
-    );
+    const messageArr: string[] = [];
+    messageArr.push(logData.created);
+    messageArr.push("|".magenta().reset());
+    messageArr.push(importance);
+    messageArr.push("|".magenta().reset());
+
+    if (logData.username)
+      messageArr.push(`( ${logData.username.cyan().reset()} )`);
+
+    if (logData.key && logData.value) {
+      messageArr.push(
+        `[ ${keyValueColor}${logData.key}: ${logData.value}${"".reset()} ]`,
+      );
+    }
+
+    if (logData.logFormat.type === DataType.STRING)
+      messageArr.push(logData.originalMessage);
+    else messageArr.push(message);
+
+    console.log(messageArr.join(" "));
   }
 
   // eslint-disable-next-line
@@ -232,16 +259,6 @@ export class Logger {
       logLevel: logLevel.trim().toLowerCase(),
       originalMessage: message,
     };
-  }
-
-  // eslint-disable-next-line
-  private isValidJSON(str: any) {
-    try {
-      JSON.parse(str);
-      return true;
-    } catch {
-      return false;
-    }
   }
 
   private colorizeJson(message: string) {
@@ -290,7 +307,7 @@ export class Logger {
     const logData: LogData = this.getLogData(
       message,
       Importance.DEB,
-      logOptions
+      logOptions,
     );
 
     this.print(

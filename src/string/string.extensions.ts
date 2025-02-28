@@ -16,7 +16,6 @@ interface String {
   cyanBg(): string;
   white(): string;
   whiteBg(): string;
-  rainbow(): string;
   reset(): string;
   bright(): string;
   dim(): string;
