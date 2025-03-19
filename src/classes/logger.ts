@@ -9,6 +9,7 @@ import { tokenize } from "./lexer";
 import { TokenType } from "../enums/tokenType";
 import { LogFormat } from "../types/logFormat";
 import { DataType } from "../enums/dataType";
+import { Utils } from "./utils";
 
 export class Logger {
   private static _level: Level = Level.INF;
@@ -74,16 +75,21 @@ export class Logger {
       return { type: "undefined", length: 0, data: null };
 
     if (typeof message === DataType.OBJECT) {
-      if (
-        this._dataTypeParserMap.has(this.getStrictType(message).toLowerCase())
-      ) {
-        return this._dataTypeParserMap.get(
-          this.getStrictType(message).toLowerCase(),
-        )!(message);
+      // if (
+      //   this._dataTypeParserMap.has(this.getStrictType(message).toLowerCase())
+      // ) {
+      //   return this._dataTypeParserMap.get(
+      //     this.getStrictType(message).toLowerCase(),
+      //   )!(message);
+      // }
+      const strictType = this.getStrictType(message).toLowerCase();
+      const parser = this._dataTypeParserMap.get(strictType);
+      if (parser) {
+        return parser(message);
       }
 
       try {
-        const msg = JSON.stringify(message);
+        const msg = Utils.safeStringify(message);
         if (msg === "{}") {
           return {
             type: typeof message,
@@ -286,16 +292,16 @@ export class Logger {
   private addOptionsToMessage(logData: LogData, logOptions?: LogOptions) {
     if (
       logOptions?.shouldColorizeJson &&
-      this.isValidJSON(JSON.stringify(logData.logFormat))
+      this.isValidJSON(Utils.safeStringify(logData.logFormat))
     ) {
       return this.colorizeJson(
-        JSON.stringify(
+        Utils.safeStringify(
           logOptions?.verbose ? logData.logFormat : logData.logFormat.data,
         ),
       );
     }
 
-    return JSON.stringify(
+    return Utils.safeStringify(
       logOptions?.verbose ? logData.logFormat : logData.logFormat.data,
     );
   }
